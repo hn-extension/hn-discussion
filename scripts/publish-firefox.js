@@ -7,6 +7,14 @@ console.log("Signing and Uploading to Firefox AMO...");
 // We need to point to the SOURCE DIRECTORY, not the zip, for web-ext
 const sourceDir = path.join(__dirname, '..', 'dist', 'firefox');
 
+console.log("Preparing Firefox Upload...");
+// DRY RUN CHECK
+if (process.env.DRY_RUN === 'true') {
+    console.log(">> [DRY RUN] Skipping web-ext sign.");
+    console.log(`>> [DRY RUN] Source Dir: ${path.join(__dirname, '..', 'dist', 'firefox')}`);
+    return;
+}
+
 try {
     // This command signs the addon and uploads it to the store ("listed")
     // Note: --channel=listed is required for the public store

@@ -4,7 +4,8 @@
   "description": "",
   "main": "background.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "node scripts/update-manifests.js 1.0.0-test && bash scripts/build-zips.sh",
+    "test:release": "DRY_RUN=true npx semantic-release --dry-run --no-ci"
   },
   "keywords": [],
   "author": "",

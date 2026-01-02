@@ -10,6 +10,15 @@ async function main() {
         process.exit(1);
     }
 
+    console.log("Authenticating with Chrome Web Store...");
+    // DRY RUN CHECK
+    if (process.env.DRY_RUN === 'true') {
+        console.log(">> [DRY RUN] Skipping actual upload.");
+        console.log(`>> [DRY RUN] Would upload: ${zipPath}`);
+        console.log(`>> [DRY RUN] Target Extension ID: ${process.env.CHROME_EXTENSION_ID}`);
+        return; // Stop here
+    }
+
     const store = chromeWebstoreUpload({
         extensionId: process.env.CHROME_EXTENSION_ID,
         clientId: process.env.CHROME_CLIENT_ID,
