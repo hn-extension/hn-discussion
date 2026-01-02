@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HN Sidebar Settings</title>
+    <style>
+        body { font-family: Verdana, sans-serif; padding: 20px; width: 400px; }
+        h2 { border-bottom: 2px solid #ff6600; padding-bottom: 10px; }
+        .site-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px; border-bottom: 1px solid #eee;
+        }
+        button {
+            background: #cc0000; color: white; border: none;
+            padding: 5px 10px; cursor: pointer; border-radius: 4px;
+        }
+        button:hover { background: #990000; }
+        #no-sites { color: #888; font-style: italic; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h2>Hidden Sites</h2>
+    <p>The sidebar button is permanently hidden on these websites:</p>
+    <div id="site-list"></div>
+    <div id="no-sites" style="display:none;">No hidden sites.</div>
+    <script src="options.js"></script>
+</body>
+</html>

@@ -1,7 +1,6 @@
 (function() {
     'use strict';
 
-    // DEBUG: Confirm the script is actually running
     console.log("HN Sidebar: Extension script initiated.");
 
     try {
@@ -19,6 +18,7 @@
         const hideHandle = document.createElement('div');
         hideHandle.id = 'hn-sidebar-hide-handle';
         hideHandle.innerHTML = '&times;';
+        hideHandle.title = "Hide on this site";
 
         const searchControls = document.createElement('div');
         searchControls.id = 'hn-search-controls';
@@ -39,11 +39,18 @@
         `;
         document.body.appendChild(sidebar);
 
-        // Check visibility preference
-        if (sessionStorage.getItem('hnSidebarButtonHidden') === 'true') {
-            hoverArea.style.display = 'none';
-            console.log("HN Sidebar: Button hidden due to user preference.");
-        }
+        // -- CHECK STORAGE FOR HIDDEN SETTINGS --
+        const currentDomain = window.location.hostname;
+
+        chrome.storage.local.get(['hiddenSites'], (result) => {
+            const hiddenSites = result.hiddenSites || [];
+            console.log("HN Sidebar: Loaded hidden sites list:", hiddenSites);
+
+            if (hiddenSites.includes(currentDomain)) {
+                hoverArea.style.display = 'none';
+                console.log(`HN Sidebar: Hidden on ${currentDomain} by user preference.`);
+            }
+        });
 
         const contentArea = sidebar.querySelector('#hn-sidebar-content');
         let hasFetched = false;
@@ -54,7 +61,6 @@
             console.log("HN Sidebar: Fetching URL...", url);
             return new Promise((resolve, reject) => {
                 chrome.runtime.sendMessage({ action: 'fetchHN', url: url }, (response) => {
-                    // Check for runtime errors (like extension being reloaded while page is open)
                     if (chrome.runtime.lastError) {
                         console.error("HN Sidebar: Runtime error", chrome.runtime.lastError);
                         reject(chrome.runtime.lastError.message);
@@ -194,7 +200,19 @@
         hideHandle.addEventListener('click', (e) => {
             e.stopPropagation();
             hoverArea.style.display = 'none';
-            sessionStorage.setItem('hnSidebarButtonHidden', 'true');
+
+            const domainToHide = window.location.hostname;
+            console.log(`HN Sidebar: Hiding permanently on ${domainToHide}`);
+
+            chrome.storage.local.get(['hiddenSites'], (result) => {
+                const hiddenSites = result.hiddenSites || [];
+                if (!hiddenSites.includes(domainToHide)) {
+                    hiddenSites.push(domainToHide);
+                    chrome.storage.local.set({ hiddenSites: hiddenSites }, () => {
+                         console.log("HN Sidebar: Preference saved.");
+                    });
+                }
+            });
         });
 
         searchControls.addEventListener('click', (e) => {
@@ -214,15 +232,16 @@
 
         document.addEventListener('keydown', (e) => {
             if (e.altKey && e.shiftKey && e.key.toUpperCase() === 'H') {
+                // If the user forcibly shows it, we just show it temporarily.
+                // We do NOT remove it from storage automatically.
                 hoverArea.style.display = 'block';
-                sessionStorage.removeItem('hnSidebarButtonHidden');
+                console.log("HN Sidebar: Temporarily showing button via hotkey.");
             }
         });
 
         console.log("HN Sidebar: Initialization complete.");
 
     } catch (e) {
-        // THIS IS THE TRY/CATCH YOU NEEDED
         console.error("HN Sidebar: Critical Error during initialization:", e);
     }
 })();
