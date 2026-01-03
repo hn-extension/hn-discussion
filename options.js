@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const listContainer = document.getElementById('site-list');
     const noSitesMsg = document.getElementById('no-sites');
 
-    // Load settings from chrome.storage
+    // Load settings
     chrome.storage.local.get(['hiddenSites'], (result) => {
         const hiddenSites = result.hiddenSites || [];
 
@@ -12,29 +12,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         hiddenSites.forEach(site => {
+            // SAFE DOM CREATION
             const div = document.createElement('div');
             div.className = 'site-item';
-            div.innerHTML = `
-                <span>${site}</span>
-                <button data-site="${site}">Remove</button>
-            `;
+
+            const span = document.createElement('span');
+            span.textContent = site; // Safe text insertion
+
+            const btn = document.createElement('button');
+            btn.textContent = 'Remove';
+            btn.dataset.site = site;
+
+            div.appendChild(span);
+            div.appendChild(btn);
             listContainer.appendChild(div);
         });
     });
 
-    // Handle Remove Button Clicks
+    // Handle Remove
     listContainer.addEventListener('click', (e) => {
         if (e.target.tagName === 'BUTTON') {
-            const siteToRemove = e.target.getAttribute('data-site');
+            const siteToRemove = e.target.dataset.site;
 
             chrome.storage.local.get(['hiddenSites'], (result) => {
                 let hiddenSites = result.hiddenSites || [];
                 hiddenSites = hiddenSites.filter(s => s !== siteToRemove);
 
                 chrome.storage.local.set({ hiddenSites: hiddenSites }, () => {
-                    // Remove from UI immediately
-                    e.target.closest('.site-item').remove();
-                    if (hiddenSites.length === 0) noSitesMsg.style.display = 'block';
+                    const item = e.target.closest('.site-item');
+                    if (item) item.remove();
+
+                    if (hiddenSites.length === 0) {
+                        noSitesMsg.style.display = 'block';
+                    }
                 });
             });
         }

@@ -13,17 +13,28 @@
 
         const button = document.createElement('button');
         button.id = 'hn-sidebar-button';
-        button.innerHTML = 'Y';
+        button.textContent = 'Y'; // Safe text
 
         const hideHandle = document.createElement('div');
         hideHandle.id = 'hn-sidebar-hide-handle';
-        hideHandle.innerHTML = '&times;';
+        hideHandle.innerHTML = '&times;'; // Safe: Static entity
         hideHandle.title = "Hide on this site";
 
+        // Safe creation of search controls
         const searchControls = document.createElement('div');
         searchControls.id = 'hn-search-controls';
-        searchControls.innerHTML = `<button class="hn-search-btn" data-search-type="domain">Domain</button><button class="hn-search-btn" data-search-type="path">Full Path</button>`;
 
+        const btnDomain = document.createElement('button');
+        btnDomain.className = 'hn-search-btn';
+        btnDomain.dataset.searchType = 'domain';
+        btnDomain.textContent = 'Domain';
+
+        const btnPath = document.createElement('button');
+        btnPath.className = 'hn-search-btn';
+        btnPath.dataset.searchType = 'path';
+        btnPath.textContent = 'Full Path';
+
+        searchControls.append(btnDomain, btnPath);
         iconWrapper.append(searchControls, button, hideHandle);
         hoverArea.appendChild(iconWrapper);
         document.body.appendChild(hoverArea);
@@ -33,10 +44,26 @@
         // -- 2. Create Sidebar UI --
         const sidebar = document.createElement('div');
         sidebar.id = 'hn-sidebar-container';
-        sidebar.innerHTML = `
-            <div id="hn-sidebar-header"><h2>Hacker News Discussion</h2><button id="hn-sidebar-close-btn" title="Close">&times;</button></div>
-            <div id="hn-sidebar-content"></div>
-        `;
+
+        // Header
+        const header = document.createElement('div');
+        header.id = 'hn-sidebar-header';
+
+        const headerTitle = document.createElement('h2');
+        headerTitle.textContent = 'Hacker News Discussion';
+
+        const closeBtn = document.createElement('button');
+        closeBtn.id = 'hn-sidebar-close-btn';
+        closeBtn.title = 'Close';
+        closeBtn.innerHTML = '&times;'; // Safe: Static entity
+
+        header.append(headerTitle, closeBtn);
+
+        // Content
+        const contentDiv = document.createElement('div');
+        contentDiv.id = 'hn-sidebar-content';
+
+        sidebar.append(header, contentDiv);
         document.body.appendChild(sidebar);
 
         // -- CHECK STORAGE FOR HIDDEN SETTINGS --
@@ -80,11 +107,31 @@
             if (!comments || comments.length === 0) return;
             comments.forEach(comment => {
                 if (!comment.author || !comment.text) return;
+
                 const commentDiv = document.createElement('div');
                 commentDiv.className = 'hn-comment';
+
+                // Meta Row
+                const metaDiv = document.createElement('div');
+                metaDiv.className = 'hn-comment-meta';
+
+                const authorStrong = document.createElement('strong');
+                authorStrong.textContent = comment.author; // SAFE
+
                 const timeAgo = new Date(comment.created_at_i * 1000).toLocaleString();
-                commentDiv.innerHTML = `<div class="hn-comment-meta"><strong>${comment.author}</strong> - ${timeAgo}</div><div class="hn-comment-text">${comment.text}</div>`;
+                const timeText = document.createTextNode(` - ${timeAgo}`);
+
+                metaDiv.append(authorStrong, timeText);
+
+                // Text Row
+                const textDiv = document.createElement('div');
+                textDiv.className = 'hn-comment-text';
+
+                textDiv.innerHTML = comment.text;
+
+                commentDiv.append(metaDiv, textDiv);
                 parentElement.appendChild(commentDiv);
+
                 if (comment.children) renderComments(comment.children, commentDiv);
             });
         };
@@ -96,40 +143,71 @@
                 storyDisplay.id = 'hn-story-display';
                 contentArea.appendChild(storyDisplay);
             }
-            storyDisplay.innerHTML = `<div class="hn-loading">Loading story...</div>`;
+            // Clear content safely
+            while (storyDisplay.firstChild) {
+                storyDisplay.removeChild(storyDisplay.firstChild);
+            }
+
+            const loading = document.createElement('div');
+            loading.className = 'hn-loading';
+            loading.textContent = 'Loading story...';
+            storyDisplay.appendChild(loading);
 
             apiFetch(`https://hn.algolia.com/api/v1/items/${storyId}`)
                 .then(story => {
-                    storyDisplay.innerHTML = '';
+                    // Clear loading
+                    storyDisplay.textContent = '';
+
                     const storyLink = document.createElement('a');
                     storyLink.href = `https://news.ycombinator.com/item?id=${story.id}`;
                     storyLink.target = '_blank';
-                    storyLink.innerHTML = `<h3>${story.title}</h3>`;
+
+                    const titleH3 = document.createElement('h3');
+                    titleH3.textContent = story.title; // SAFE
+
+                    storyLink.appendChild(titleH3);
                     storyDisplay.appendChild(storyLink);
+
                     renderComments(story.children, storyDisplay);
                 })
                 .catch((err) => {
                     console.error(err);
-                    storyDisplay.innerHTML = '<div class="hn-no-results">Error fetching story details.</div>';
+                    storyDisplay.textContent = '';
+                    const errDiv = document.createElement('div');
+                    errDiv.className = 'hn-no-results';
+                    errDiv.textContent = 'Error fetching story details.';
+                    storyDisplay.appendChild(errDiv);
                 });
         };
 
         const renderSubmissionList = (hits) => {
             const selector = document.createElement('details');
             selector.id = 'hn-submission-selector';
-            selector.innerHTML = `<summary>${hits.length} discussions found. (Showing latest)</summary>`;
+
+            const summary = document.createElement('summary');
+            summary.textContent = `${hits.length} discussions found. (Showing latest)`;
+            selector.appendChild(summary);
+
             const list = document.createElement('ul');
             list.id = 'hn-submission-list';
 
             hits.forEach(hit => {
                 const date = new Date(hit.created_at_i * 1000).toLocaleDateString();
                 const li = document.createElement('li');
-                li.innerHTML = `
-                    <button data-story-id="${hit.objectID}">
-                        <div class="submission-title">${hit.title}</div>
-                        <div class="submission-meta">${hit.points} points | ${hit.num_comments} comments | ${date}</div>
-                    </button>
-                `;
+
+                const btn = document.createElement('button');
+                btn.dataset.storyId = hit.objectID;
+
+                const titleDiv = document.createElement('div');
+                titleDiv.className = 'submission-title';
+                titleDiv.textContent = hit.title; // SAFE
+
+                const metaDiv = document.createElement('div');
+                metaDiv.className = 'submission-meta';
+                metaDiv.textContent = `${hit.points} points | ${hit.num_comments} comments | ${date}`; // SAFE
+
+                btn.append(titleDiv, metaDiv);
+                li.appendChild(btn);
                 list.appendChild(li);
             });
             selector.appendChild(list);
@@ -137,22 +215,41 @@
         };
 
         const searchForUrl = (searchUrl, searchTitle) => {
-            contentArea.innerHTML = `<div class="hn-loading">Searching for "${searchTitle}"...</div>`;
+            // Clear safely
+            while (contentArea.firstChild) {
+                contentArea.removeChild(contentArea.firstChild);
+            }
+
+            const loading = document.createElement('div');
+            loading.className = 'hn-loading';
+            loading.textContent = `Searching for "${searchTitle}"...`;
+            contentArea.appendChild(loading);
 
             apiFetch(`https://hn.algolia.com/api/v1/search_by_date?query=${encodeURIComponent(searchUrl)}&tags=story`)
                 .then(searchResults => {
-                    contentArea.innerHTML = '';
+                    contentArea.textContent = ''; // Clear loading
 
                     const pageUrl = encodeURIComponent(window.location.href);
                     const pageTitle = encodeURIComponent(document.title);
                     const submitUrl = `https://news.ycombinator.com/submit?u=${pageUrl}&t=${pageTitle}`;
+
                     const actionsDiv = document.createElement('div');
                     actionsDiv.id = 'hn-sidebar-actions';
-                    actionsDiv.innerHTML = `<a href="${submitUrl}" target="_blank" class="hn-submit-link">Post this URL to HN</a>`;
+
+                    const link = document.createElement('a');
+                    link.href = submitUrl;
+                    link.target = '_blank';
+                    link.className = 'hn-submit-link';
+                    link.textContent = 'Post this URL to HN';
+
+                    actionsDiv.appendChild(link);
                     contentArea.appendChild(actionsDiv);
 
                     if (searchResults.hits.length === 0) {
-                        contentArea.insertAdjacentHTML('beforeend', '<div class="hn-no-results">No discussions found.</div>');
+                        const noRes = document.createElement('div');
+                        noRes.className = 'hn-no-results';
+                        noRes.textContent = 'No discussions found.';
+                        contentArea.appendChild(noRes);
                         return;
                     }
 
@@ -164,7 +261,11 @@
                 })
                 .catch((err) => {
                     console.error(err);
-                    contentArea.innerHTML = '<div class="hn-no-results">Error searching Algolia.</div>';
+                    contentArea.textContent = '';
+                    const errDiv = document.createElement('div');
+                    errDiv.className = 'hn-no-results';
+                    errDiv.textContent = 'Error searching Algolia.';
+                    contentArea.appendChild(errDiv);
                 });
         };
 
@@ -217,7 +318,7 @@
 
         searchControls.addEventListener('click', (e) => {
             if (e.target.matches('.hn-search-btn')) {
-                const searchType = e.target.getAttribute('data-search-type');
+                const searchType = e.target.dataset.searchType;
                 initiateSearch(searchType);
             }
         });
@@ -232,8 +333,6 @@
 
         document.addEventListener('keydown', (e) => {
             if (e.altKey && e.shiftKey && e.key.toUpperCase() === 'H') {
-                // If the user forcibly shows it, we just show it temporarily.
-                // We do NOT remove it from storage automatically.
                 hoverArea.style.display = 'block';
                 console.log("HN Sidebar: Temporarily showing button via hotkey.");
             }
