@@ -1,10 +1,10 @@
-(function() {
+(function () {
     'use strict';
 
     console.log("HN Sidebar: Extension script initiated.");
 
     try {
-        // -- 1. Create Floating Button UI --
+        // Create Floating Button UI
         const hoverArea = document.createElement('div');
         hoverArea.id = 'hn-hover-area';
 
@@ -41,7 +41,7 @@
 
         console.log("HN Sidebar: Button added to page.");
 
-        // -- 2. Create Sidebar UI --
+        // Create Sidebar UI
         const sidebar = document.createElement('div');
         sidebar.id = 'hn-sidebar-container';
 
@@ -82,12 +82,60 @@
         const contentArea = sidebar.querySelector('#hn-sidebar-content');
         let hasFetched = false;
 
-        // -- 3. Helper Functions --
+        // Helper Functions
+
+        /**
+         * parses HTML string into a sanitized DocumentFragment
+         * @param {string} htmlString
+         * @returns {DocumentFragment}
+         */
+        function createSafeDOM(htmlString) {
+            const allowedTags = ['b', 'i', 'em', 'strong', 'a', 'p', 'pre', 'code', 'br', 'ul', 'li', 'ol'];
+            const allowedAttrs = ['href', 'title', 'target'];
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlString, 'text/html');
+
+            // Select all elements to check against whitelist
+            const elements = doc.body.querySelectorAll('*');
+
+            elements.forEach(el => {
+                // 1. Check Tag Whitelist
+                if (!allowedTags.includes(el.tagName.toLowerCase())) {
+                    // "Unwrap" the bad tag (keep text content, remove tag)
+                    // If you prefer to delete the content entirely, use el.remove() instead.
+                    const text = document.createTextNode(el.textContent);
+                    el.parentNode.replaceChild(text, el);
+                    return;
+                }
+
+                // 2. Sanitize Attributes
+                Array.from(el.attributes).forEach(attr => {
+                    const name = attr.name.toLowerCase();
+                    if (!allowedAttrs.includes(name)) {
+                        el.removeAttribute(name);
+                    } else if (name === 'href') {
+                        // Prevent javascript: links
+                        if (/^(javascript|data):/i.test(attr.value)) {
+                            el.removeAttribute('href');
+                        }
+                    }
+                });
+            });
+
+            // Move validated nodes to a fragment
+            const fragment = document.createDocumentFragment();
+            while (doc.body.firstChild) {
+                fragment.appendChild(doc.body.firstChild);
+            }
+
+            return fragment;
+        }
 
         const apiFetch = (url) => {
             console.log("HN Sidebar: Fetching URL...", url);
             return new Promise((resolve, reject) => {
-                chrome.runtime.sendMessage({ action: 'fetchHN', url: url }, (response) => {
+                chrome.runtime.sendMessage({action: 'fetchHN', url: url}, (response) => {
                     if (chrome.runtime.lastError) {
                         console.error("HN Sidebar: Runtime error", chrome.runtime.lastError);
                         reject(chrome.runtime.lastError.message);
@@ -127,7 +175,7 @@
                 const textDiv = document.createElement('div');
                 textDiv.className = 'hn-comment-text';
 
-                textDiv.innerHTML = comment.text;
+                textDiv.replaceChildren(createSafeDOM(comment.text));
 
                 commentDiv.append(metaDiv, textDiv);
                 parentElement.appendChild(commentDiv);
@@ -289,7 +337,7 @@
             }
         };
 
-        // -- 4. Event Listeners --
+        // -- Event Listeners --
 
         button.addEventListener('click', toggleSidebar);
         sidebar.querySelector('#hn-sidebar-close-btn').addEventListener('click', toggleSidebar);
@@ -309,8 +357,8 @@
                 const hiddenSites = result.hiddenSites || [];
                 if (!hiddenSites.includes(domainToHide)) {
                     hiddenSites.push(domainToHide);
-                    chrome.storage.local.set({ hiddenSites: hiddenSites }, () => {
-                         console.log("HN Sidebar: Preference saved.");
+                    chrome.storage.local.set({hiddenSites: hiddenSites}, () => {
+                        console.log("HN Sidebar: Preference saved.");
                     });
                 }
             });
