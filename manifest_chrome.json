@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Hacker News Discussion Sidebar",
-  "version": "1.1.0-beta",
+  "version": "0.0.1",
   "description": "Shows the latest HN submission for the current URL.",
   "permissions": [
     "activeTab",
