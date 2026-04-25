@@ -66,7 +66,8 @@
 #hn-submission-list button {
     background: none; border: none; text-align: left; padding: 8px; width: 100%;
     border-radius: 3px; cursor: pointer; border-bottom: 1px solid #eee;
+    color: black !important;
 }
 #hn-submission-list button:hover { background-color: #e7e7e7; }
-#hn-submission-list .submission-title { font-weight: bold; font-size: 13px; margin-bottom: 2px;}
-#hn-submission-list .submission-meta { font-size: 11px; color: #828282; }
+#hn-submission-list .submission-title { font-weight: bold; font-size: 13px; margin-bottom: 2px; color: black !important; }
+#hn-submission-list .submission-meta { font-size: 11px; color: #828282 !important; }
