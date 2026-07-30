@@ -1,5 +1,8 @@
 # Hacker News Discussion Sidebar
 
+[![Package](https://github.com/hn-extension/hn-discussion/actions/workflows/package.yml/badge.svg)](https://github.com/hn-extension/hn-discussion/actions/workflows/package.yml)
+[![Release](https://github.com/hn-extension/hn-discussion/actions/workflows/release.yml/badge.svg)](https://github.com/hn-extension/hn-discussion/actions/workflows/release.yml)
+
 A browser extension that helps you find Hacker News discussions for the page you are currently viewing.
 
 The extension adds a small floating Hacker News button to web pages. Open it to search Hacker News via the Algolia HN API, view matching submissions, read comments in a sidebar, or submit the current page to Hacker News.
@@ -53,10 +56,11 @@ See [PRIVACY.md](PRIVACY.md) for the full privacy policy.
 
 ## Development
 
-Install dependencies:
+Use Node.js 24 and install the locked dependencies:
 
 ```bash
-npm install
+nvm use
+npm ci
 ```
 
 Build browser extension zip files:
@@ -78,7 +82,10 @@ This creates:
 
 ## Release Notes
 
-This project uses semantic-release. Commit messages should follow the Conventional Commits format, for example:
+This project uses semantic-release. Commits merged into `master` (or `main`)
+are analyzed and releasable changes create a GitHub Release and are submitted
+to Firefox Add-ons. Commit messages should follow the Conventional Commits
+format, for example:
 
 ```text
 fix: correct discussion title color
@@ -86,6 +93,10 @@ feat: add new sidebar control
 chore: update build tooling
 ```
 
+See [docs/RELEASING.md](docs/RELEASING.md) for the required GitHub secrets,
+the full release flow, retry instructions, and the future Chrome publishing
+path.
+
 ## License
 
-ISC
+MPL-2.0

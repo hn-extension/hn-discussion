@@ -1,25 +1,53 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Create dist folders
-mkdir -p dist/chrome dist/firefox
+set -euo pipefail
 
-# Copy files
-cp background.js content.js options.js options.html styles.css dist/chrome/
-cp background.js content.js options.js options.html styles.css dist/firefox/
-# Add icons if you have them: cp -r icons dist/chrome/
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+VERSION="${1:-$(node -p "require('$PROJECT_DIR/package.json').version")}"
 
-# Copy Manifests
-cp manifest_chrome.json dist/chrome/manifest.json
-cp manifest_firefox.json dist/firefox/manifest.json
+if [[ ! "$VERSION" =~ ^[0-9]+(\.[0-9]+){0,3}$ ]]; then
+    echo "Invalid browser extension version: $VERSION" >&2
+    exit 1
+fi
 
-# Zip Chrome
-cd dist/chrome
-zip -r ../../chrome-extension.zip .
-cd ../..
+CHROME_DIR="$PROJECT_DIR/dist/chrome"
+FIREFOX_DIR="$PROJECT_DIR/dist/firefox"
+CHROME_ZIP="$PROJECT_DIR/chrome-extension.zip"
+FIREFOX_ZIP="$PROJECT_DIR/firefox-extension.zip"
+EXTENSION_FILES=(
+    background.js
+    content.js
+    options.js
+    options.html
+    styles.css
+)
 
-# Zip Firefox
-cd dist/firefox
-zip -r ../../firefox-extension.zip .
-cd ../..
+rm -rf -- "$CHROME_DIR" "$FIREFOX_DIR"
+rm -f -- "$CHROME_ZIP" "$FIREFOX_ZIP"
+mkdir -p -- "$CHROME_DIR" "$FIREFOX_DIR"
 
-echo "Zips created successfully."
+for file in "${EXTENSION_FILES[@]}"; do
+    cp -- "$PROJECT_DIR/$file" "$CHROME_DIR/"
+    cp -- "$PROJECT_DIR/$file" "$FIREFOX_DIR/"
+done
+
+cp -- "$PROJECT_DIR/manifest_chrome.json" "$CHROME_DIR/manifest.json"
+cp -- "$PROJECT_DIR/manifest_firefox.json" "$FIREFOX_DIR/manifest.json"
+
+node "$SCRIPT_DIR/update-manifests.js" \
+    "$VERSION" \
+    "$CHROME_DIR/manifest.json" \
+    "$FIREFOX_DIR/manifest.json"
+
+(
+    cd -- "$CHROME_DIR"
+    zip -q -r "$CHROME_ZIP" .
+)
+
+(
+    cd -- "$FIREFOX_DIR"
+    zip -q -r "$FIREFOX_ZIP" .
+)
+
+echo "Built Chrome and Firefox packages for version $VERSION."

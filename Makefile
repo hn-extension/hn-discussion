@@ -1,7 +1,7 @@
 # Makefile for HN Sidebar Extension
 
 # Default version if none is provided
-VERSION ?= 0.0.0-dev
+VERSION ?= 1.0.0
 
 # Ensure these targets are always executed, even if a file matches the name
 .PHONY: help install clean build publish-dry-run release-dry-run
@@ -12,10 +12,10 @@ help:
 	@echo "----------------------------------------------------------------"
 	@echo "  make install           Install Node dependencies"
 	@echo "  make clean             Remove build artifacts (dist/ folders and zips)"
-	@echo "  make build             Build zips locally (default version: 0.0.0-dev)"
-	@echo "  make build VERSION=1.2 Build zips with a specific version"
+	@echo "  make build             Build zips locally (default version: 1.0.0)"
+	@echo "  make build VERSION=1.2.3 Build zips with a specific version"
 	@echo "  make publish-dry-run   Test the upload scripts in mock mode"
-	@echo "  make release-dry-run   Test Semantic Release logic (requires GITHUB_TOKEN)"
+	@echo "  make release-dry-run   Test semantic-release logic (requires GITHUB_TOKEN)"
 	@echo "----------------------------------------------------------------"
 
 # -- Setup --------------------------------------------------------------------
@@ -32,15 +32,14 @@ clean:
 # Usage: make build OR make build VERSION=1.1.0
 build: clean
 	@echo "Building version $(VERSION)..."
-	node scripts/update-manifests.js $(VERSION)
-	bash scripts/build-zips.sh
+	npm run build -- $(VERSION)
 	@echo "Build complete."
 	@echo "   - chrome-extension.zip"
 	@echo "   - firefox-extension.zip"
 
 # -- Testing ------------------------------------------------------------------
 # Runs the publish scripts with DRY_RUN=true to verify logic/secrets locally
-publish-dry-run:
+publish-dry-run: build
 	@echo "Testing Chrome Upload Script (DRY RUN)..."
 	@DRY_RUN=true node scripts/publish-chrome.js
 	@echo "-----------------------------------"
@@ -54,4 +53,4 @@ release-dry-run:
 		exit 1; \
 	fi
 	@echo "Running Semantic Release (Dry Run)..."
-	npx semantic-release --dry-run --no-ci
+	npm run release:dry-run

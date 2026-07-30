@@ -1,18 +1,26 @@
 {
   "name": "hn-sidebar-extension",
   "version": "1.0.0",
-  "description": "",
+  "description": "A browser extension for finding Hacker News discussions about the current page.",
+  "private": true,
   "main": "background.js",
   "scripts": {
-    "build": "node scripts/update-manifests.js 1.0.0-test && bash scripts/build-zips.sh",
-    "test:release": "DRY_RUN=true npx semantic-release --dry-run --no-ci"
+    "build": "bash scripts/build-zips.sh",
+    "check": "npm run build && npm run lint:firefox",
+    "lint:firefox": "web-ext lint --source-dir dist/firefox",
+    "publish:chrome": "node scripts/publish-chrome.js",
+    "publish:firefox": "node scripts/publish-firefox.js",
+    "release": "semantic-release",
+    "release:dry-run": "semantic-release --dry-run --no-ci"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "browser-extension",
+    "firefox",
+    "hacker-news"
+  ],
+  "license": "MPL-2.0",
   "devDependencies": {
     "@semantic-release/exec": "^7.1.0",
-    "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^12.0.2",
     "chrome-webstore-upload": "^4.0.3",
     "semantic-release": "^25.0.2",

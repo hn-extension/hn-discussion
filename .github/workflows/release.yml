@@ -2,37 +2,65 @@ name: Release
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
+      - master
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write
       issues: write
       pull-requests: write
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: "lts/*"
+          node-version: "24"
+          cache: npm
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm ci
 
-      - name: Semantic Release
+      - name: Build and validate packages
+        run: npm run check
+
+      - name: Create GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Chrome Secrets
-          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
-          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
-          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
-          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
-          # Firefox Secrets
+        run: npm run release
+
+      - name: Find release created for this commit
+        id: released
+        shell: bash
+        run: |
+          tag="$(git tag --points-at HEAD --list 'v*' | sort -V | tail -n 1)"
+          if [[ -n "$tag" ]]; then
+            echo "tag=$tag" >> "$GITHUB_OUTPUT"
+            echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build the released version
+        if: steps.released.outputs.tag != ''
+        env:
+          RELEASE_VERSION: ${{ steps.released.outputs.version }}
+        run: npm run build -- "$RELEASE_VERSION"
+
+      - name: Publish to Firefox Add-ons
+        if: steps.released.outputs.tag != ''
+        env:
           FIREFOX_API_KEY: ${{ secrets.FIREFOX_API_KEY }}
           FIREFOX_API_SECRET: ${{ secrets.FIREFOX_API_SECRET }}
-          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
-        run: npx semantic-release
+        run: npm run publish:firefox

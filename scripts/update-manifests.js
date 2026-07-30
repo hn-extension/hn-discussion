@@ -1,30 +1,27 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
-// 1. Get the version passed by semantic-release
-const newVersion = process.argv[2]; 
-if (!newVersion) {
-    console.error("No version provided!");
-    process.exit(1);
+const projectDir = path.join(__dirname, "..");
+const newVersion = process.argv[2];
+const manifestArguments = process.argv.slice(3);
+const manifestFiles =
+  manifestArguments.length > 0
+    ? manifestArguments
+    : ["manifest_chrome.json", "manifest_firefox.json"];
+
+if (!newVersion || !/^\d+(\.\d+){0,3}$/.test(newVersion)) {
+  console.error(`Invalid browser extension version: ${newVersion || "(missing)"}`);
+  process.exit(1);
 }
 
-console.log(`Updating manifests to version ${newVersion}...`);
+manifestFiles.forEach((file) => {
+  const filePath = path.resolve(projectDir, file);
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Manifest not found: ${filePath}`);
+  }
 
-// 2. Define the files to update
-const manifests = [
-    'manifest_chrome.json',
-    'manifest_firefox.json'
-];
-
-// 3. Update each file
-manifests.forEach(file => {
-    const filePath = path.join(__dirname, '..', file);
-    if (fs.existsSync(filePath)) {
-        const manifest = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-        manifest.version = newVersion;
-        fs.writeFileSync(filePath, JSON.stringify(manifest, null, 2) + '\n');
-        console.log(`Updated ${file}`);
-    } else {
-        console.error(`File not found: ${file}`);
-    }
+  const manifest = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  manifest.version = newVersion;
+  fs.writeFileSync(filePath, `${JSON.stringify(manifest, null, 2)}\n`);
+  console.log(`Set ${path.relative(projectDir, filePath)} to version ${newVersion}.`);
 });

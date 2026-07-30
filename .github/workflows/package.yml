@@ -1,29 +1,35 @@
-name: Release
+name: Package
 
 on:
   push:
-    branches: [ "main" ]
+  pull_request:
 
 jobs:
-  release:
+  package:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # Required to create tags and releases
-      issues: write
-      pull-requests: write
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: "lts/*"
+          node-version: "24"
+          cache: npm
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm ci
 
-      - name: Semantic Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+      - name: Build and validate packages
+        run: npm run check
+
+      - name: Upload browser packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-extension-packages
+          path: |
+            chrome-extension.zip
+            firefox-extension.zip
+          if-no-files-found: error
+          retention-days: 14
